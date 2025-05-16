@@ -21,8 +21,8 @@ int main() {
     Foundations[3].suit = 3; // ♣
 
     // Reading cards from input
-    readInit(Columns);
-    char commandChar;
+    readInit(Columns, Stack, Foundations);
+    char commandChar = ' '; // Initialize command character
     while (commandChar != 'Z')  {
         cin >> commandChar; // Read command character
         switch (commandChar) {

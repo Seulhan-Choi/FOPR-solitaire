@@ -3,6 +3,8 @@
 
 #include "structs.h"
 #include <vector>
+#include <iostream>
+
 using namespace std;
 
 void discardCard(vector<Card> &Stack);

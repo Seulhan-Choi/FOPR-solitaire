@@ -7,7 +7,7 @@ struct Card {
 };
 
 struct Storage {
-    int availableID = 1; // Start from Ace (1)
+    int lastCardID = 0;
     int suit;
 };
 
