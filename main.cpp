@@ -28,23 +28,35 @@ int main() {
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
     char commandChar = ' '; // Initialize command character
+    int moveCounter = 0; // Initialize move counter
     while (commandChar != 'Z')  {
         cin >> commandChar; // Read command character
+
         switch (commandChar) {
             case 'D':
                 discardCard(stack);
+                moveCounter++; // Increment move counter
                 break;
             case 'M':
                 moveCards(columns, stack, storage);
+                moveCounter++; // Increment move counter
                 break;
             case 'S':
                 showGameState(columns, stack, storage);
                 break;
             case 'Z':
-                cout << "Exiting game." << endl;
+                if (!checkEndGame(storage, commandChar, moveCounter))   {
+                    cout << "No has guanyat i has fet " << moveCounter;
+                    if (moveCounter == 1) {
+                        cout << " moviment." << endl;
+                    }
+                    else {
+                        cout << " moviments." << endl;
+                    }
+                }
                 break;
         }
-        checkEndGame(columns, stack, storage);
+        checkEndGame(storage, commandChar, moveCounter);
     }
 
 }

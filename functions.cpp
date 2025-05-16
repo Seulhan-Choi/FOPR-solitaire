@@ -3,7 +3,7 @@
 void readInit(vector<vector<Card>>& columns, vector<Card>& stack, Storage (&storage)[4]) {
     // Initialize the game state and read the initial configuration from input
     // This function should set up the game board, including the stack and columns
-    int usedCards = 0; // Total number of cards used
+
 
     for (int i = 0; i < 7; ++i) {   // Initialize 7 columns
         int n;
@@ -12,7 +12,6 @@ void readInit(vector<vector<Card>>& columns, vector<Card>& stack, Storage (&stor
             string input;
             cin >> input;
             columns[i].push_back(readCard(input));
-            usedCards++;
         }
     }
 
@@ -21,7 +20,10 @@ void readInit(vector<vector<Card>>& columns, vector<Card>& stack, Storage (&stor
         cin >> n;
         storage[i].lastCardID = n; // Initialize the top card ID for each foundation
         storage[i].suit = i;
-        usedCards += n;
+        for (int j = 0; j < n; ++j) { // We dont have to process each card,  as the initial foundations are always in order.
+            string dummy;
+            cin >> dummy; // Read and discard the actual card string
+        }
     }
 
     int n;
@@ -31,10 +33,11 @@ void readInit(vector<vector<Card>>& columns, vector<Card>& stack, Storage (&stor
         cin >> input;
         stack.insert(stack.begin(), readCard(input));
     }
-    for (int i = 0; i < stack.size(); i++) {
+
+    /*for (int i = 0; i < stack.size(); i++) {
 		cout << printCard(stack[i]) << " ";
     }
-    cout << endl;
+    cout << endl;*/
 }
     
 Card readCard(string input) {
@@ -79,7 +82,7 @@ bool moveCardsAux_toM(Card temp, Storage (&storage)[4], int num, int destination
     }
     else {
         storage[destinationNum - 1].lastCardID++;
-        cout << "Card moved successfully to storage " << destinationNum << endl; // Debug message
+        //cout << "Card moved successfully to storage " << destinationNum << endl; // Debug message
         return true;
     }
 }
@@ -87,12 +90,12 @@ bool moveCardsAux_toC(Card temp, vector<vector<Card>>& columns, int num, int des
     if (columns[destinationNum - 1].empty())    {
         if (temp.value == 13)   {
             columns[destinationNum - 1].push_back(temp);
-            cout << "Card moved successfully to column " << destinationNum << endl; // Debug message
+            //cout << "Card moved successfully to column " << destinationNum << endl; // Debug message
         }
         else
         {
             cout << "Error: No hi ha concordança de valor i/o pal" << endl;
-            cout << "You can only put a king in an empty column" << endl; // Debug message
+            //cout << "You can only put a king in an empty column" << endl; // Debug message
             return false;
         }
     }
@@ -101,7 +104,7 @@ bool moveCardsAux_toC(Card temp, vector<vector<Card>>& columns, int num, int des
         Card topCard = columns[destinationNum - 1].back();
         if (topCard.suit % 2  != temp.suit % 2 && topCard.value - temp.value == 1)  {
             columns[destinationNum - 1].push_back(temp);
-            cout << "Card moved successfully to column " << destinationNum << endl; // Debug message
+            //cout << "Card moved successfully to column " << destinationNum << endl; // Debug message
             return true;
         }
         else
@@ -132,6 +135,17 @@ string printCard(const Card& card) {
     }
     return output;
 }
-void checkEndGame(vector<vector<Card>>& columns, vector<Card>& stack, Storage(&storage)[4]) {
-    cout << "checkEndGame" << endl;
+bool checkEndGame(Storage(&storage)[4], char& commandChar, int& moveCounter) {
+    if (storage[0].lastCardID == 13 && storage[1].lastCardID == 13 && storage[2].lastCardID == 13 && storage[3].lastCardID == 13) {
+        cout << "Felicitats has guanyat!! Ho has fet en " <<  moveCounter;
+        if (moveCounter == 1) {
+            cout << " moviment." << endl;
+        }
+        else {
+            cout << " moviments." << endl;
+        }
+        commandChar = 'Z'; // Set commandChar to 'Z' to exit the game loop
+        return true;
+    }
+    return false;
 }
