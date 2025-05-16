@@ -3,11 +3,11 @@
 
 struct Card {
     int value;  // 1-13 (Ace-King)
-    int suit;   // 0-3 ( ♥, ♦, ♠, ♣)
+    int suit;   // 0-3 ( ♥, ♦, ♠, ♣)s
 };
 
 struct Storage {
-    int availableID = 1; // Start from Ace (1)
+    int lastCardID = 0;
     int suit;
 };
 
