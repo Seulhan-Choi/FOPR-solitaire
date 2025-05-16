@@ -3,7 +3,7 @@
 
 struct Card {
     int value;  // 1-13 (Ace-King)
-    int suit;   // 0-3 ( ♥, ♦, ♠, ♣)
+    int suit;   // 0-3 ( ♥, ♦, ♠, ♣)s
 };
 
 struct Storage {

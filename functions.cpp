@@ -24,11 +24,17 @@ void readInit(vector<vector<Card>>& columns, vector<Card>& stack, Storage (&stor
         usedCards += n;
     }
 
-    for (int i = 0; i < 52 - usedCards; i++)    { // Initialize the stack with the remaining cards
+    int n;
+	cin >> n; // Read the number of cards in the stack
+    for (int i = 0; i < n; i++)    { // Initialize the stack with the remaining cards
         string input;
         cin >> input;
-        stack.push_back(readCard(input));
+        stack.insert(stack.begin(), readCard(input));
     }
+    for (int i = 0; i < stack.size(); i++) {
+		cout << printCard(stack[i]) << " ";
+    }
+    cout << endl;
 }
     
 Card readCard(string input) {
@@ -93,7 +99,7 @@ bool moveCardsAux_toC(Card temp, vector<vector<Card>>& columns, int num, int des
     else
     {
         Card topCard = columns[destinationNum - 1].back();
-        if (topCard.suit % 2  != temp.suit % 2 && topCard.value - temp.value == 1) {
+        if (topCard.suit % 2  != temp.suit % 2 && topCard.value - temp.value == 1)  {
             columns[destinationNum - 1].push_back(temp);
             cout << "Card moved successfully to column " << destinationNum << endl; // Debug message
             return true;
@@ -107,6 +113,25 @@ bool moveCardsAux_toC(Card temp, vector<vector<Card>>& columns, int num, int des
     
 }
 
+string printCard(const Card& card) {
+     // Print the card in a readable format
+    char outputValue = ' ';
+    if (card.value == 1) outputValue = 'A';
+    else if (card.value == 11) outputValue = 'J';
+    else if (card.value == 12) outputValue = 'Q';
+    else if (card.value == 13) outputValue = 'K';
+    else outputValue = card.value + '0'; // Convert int to char
+    string output;
+
+    switch (card.suit) {
+        case 0: output = outputValue + string("\033[0;31m\u2665\033[0m"); break; // Hearts
+        case 1: output = outputValue + string("\033[0;31m\u2666\033[0m"); break; // Diamonds
+        case 2: output = outputValue + string("\u2660"); break; // Spades
+        case 3: output = outputValue + string("\u2663"); break; // Clubs
+        default: output = outputValue; break;
+    }
+    return output;
+}
 void checkEndGame(vector<vector<Card>>& columns, vector<Card>& stack, Storage(&storage)[4]) {
     cout << "checkEndGame" << endl;
 }

@@ -13,5 +13,6 @@ void readInit(vector<vector<Card>>& columns, vector<Card>& stack, Storage (&stor
 Card readCard(string input);
 bool moveCardsAux_toM(Card temp, Storage (&storage)[4], int num, int destinationNum);
 bool moveCardsAux_toC(Card temp, vector<vector<Card>>& columns, int num, int destinationNum);
+string printCard(const Card& card);
 void checkEndGame(vector<vector<Card>>& columns, vector<Card>& stack, Storage (&storage)[4]);
 #endif // FUNCTIONS_H
