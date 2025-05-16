@@ -11,35 +11,40 @@ using namespace std;
 
 int main() {
     // Define data structures
-    vector<Card> Stack; // Stack of cards
-    vector<vector<Card>> Columns(7);    // 7 columns for the game
+    vector<Card> stack; // stack of cards
+    vector<vector<Card>> columns(7);    // 7 columns for the game
 
-    Storage Foundations[4]; // 4 suits for each foundation
-    Foundations[0].suit = 0; // ♥
-    Foundations[1].suit = 1; // ♦
-    Foundations[2].suit = 2; // ♠
-    Foundations[3].suit = 3; // ♣
+    Storage storage[4]; // 4 suits for each foundation
+    storage[0].suit = 0; // ♥
+    storage[1].suit = 1; // ♦
+    storage[2].suit = 2; // ♠
+    storage[3].suit = 3; // ♣
 
     // Reading cards from input
-    readInit(Columns, Stack, Foundations);
+    readInit(columns, stack, storage);
+
+    // Clear any leftover input in the buffer
+    cin.clear();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
     char commandChar = ' '; // Initialize command character
     while (commandChar != 'Z')  {
         cin >> commandChar; // Read command character
         switch (commandChar) {
             case 'D':
-                discardCard(Stack);
+                discardCard(stack);
                 break;
             case 'M':
-                moveCards(Columns, Stack, Foundations);
+                moveCards(columns, stack, storage);
                 break;
             case 'S':
-                showGameState(Columns, Stack, Foundations);
+                showGameState(columns, stack, storage);
                 break;
             case 'Z':
                 cout << "Exiting game." << endl;
                 break;
         }
-        checkEndGame(Columns, Stack, Foundations);
+        checkEndGame(columns, stack, storage);
     }
 
 }
