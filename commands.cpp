@@ -1,6 +1,4 @@
 #include "commands.h"
-#include "structs.h"
-
 
 void discardCard(vector<Card> &Stack) {
     // Discard the top card from the stack

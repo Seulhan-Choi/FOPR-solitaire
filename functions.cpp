@@ -3,8 +3,6 @@
 void readInit(vector<vector<Card>> &Columns) {
     // Initialize the game state and read the initial configuration from input
     // This function should set up the game board, including the stack and columns
-    // For example, you might read the number of cards in each column and their values
-    // You can use cin to read from standard input or any other method as needed
     for (int i = 0; i < 7; ++i) {
         int n;
         cin >> n;
