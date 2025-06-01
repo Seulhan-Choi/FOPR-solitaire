@@ -9,10 +9,14 @@
 
 using namespace std;
 
-void readInit(vector<vector<Card>>& columns, vector<Card>& stack, Storage (&storage)[4]);
+bool isRed(Suit& suit);
+string printableCard(const Card& card);
+
 Card readCard(string input);
-bool moveCardsAux_toM(Card temp, Storage (&storage)[4], int num, int destinationNum);
-bool moveCardsAux_toC(Card temp, vector<vector<Card>>& columns, int num, int destinationNum);
-string printCard(const Card& card);
-bool checkEndGame(Storage (&storage)[4], char& commandChar, int& moveCounter);
+void readInit(vector<vector<Card>>& columns, vector<Card>& stack, Foundation(&foundations)[NUM_FOUNDATIONS]);
+
+bool moveCardsAux_toM(vector<Card>& originVector, Foundation (&foundations)[NUM_FOUNDATIONS], int num, int destinationNum);
+
+bool moveCardsAux_toC(vector<Card>& originVector, vector<vector<Card>>& columns, int num, int originNum, int destinationNum);
+bool checkEndGame(Foundation (&foundations)[NUM_FOUNDATIONS], char& commandChar, int& moveCounter);
 #endif // FUNCTIONS_H

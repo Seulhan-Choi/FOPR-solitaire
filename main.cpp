@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string> // for string handling
-#include <stdexcept> // for error handling
+
 #include "structs.h"
 #include "functions.h"
 #include "commands.h"
@@ -12,16 +12,12 @@ using namespace std;
 int main() {
     // Define data structures
     vector<Card> stack; // stack of cards
-    vector<vector<Card>> columns(7);    // 7 columns for the game
+    vector<vector<Card>> columns(NUM_COLUMNS);    // 7 columns
 
-    Storage storage[4]; // 4 suits for each foundation
-    storage[0].suit = 0; // ♥
-    storage[1].suit = 1; // ♦
-    storage[2].suit = 2; // ♠
-    storage[3].suit = 3; // ♣
+    Foundation foundations[NUM_FOUNDATIONS]; // 4 foundations
 
     // Reading cards from input
-    readInit(columns, stack, storage);
+    readInit(columns, stack, foundations);
 
     // Clear any leftover input in the buffer
     cin.clear();
@@ -29,34 +25,36 @@ int main() {
 
     char commandChar = ' '; // Initialize command character
     int moveCounter = 0; // Initialize move counter
-    while (commandChar != 'Z')  {
+    while (commandChar != 'Z') {
+        // Inv: L’estat del joc reflecteix correctament totes les comandes llegides fins ara,
+        // i moveCounter conté el nombre de moviments realitzats.
         cin >> commandChar; // Read command character
 
         switch (commandChar) {
-            case 'D':
-                discardCard(stack);
-                moveCounter++; // Increment move counter
-                break;
-            case 'M':
-                moveCards(columns, stack, storage);
-                moveCounter++; // Increment move counter
-                break;
-            case 'S':
-                showGameState(columns, stack, storage);
-                break;
-            case 'Z':
-                if (!checkEndGame(storage, commandChar, moveCounter))   {
-                    cout << "No has guanyat i has fet " << moveCounter;
-                    if (moveCounter == 1) {
-                        cout << " moviment." << endl;
-                    }
-                    else {
-                        cout << " moviments." << endl;
-                    }
+        case 'D':
+            discardCard(stack);
+            moveCounter++; // Increment move counter
+            checkEndGame(foundations, commandChar, moveCounter);
+            break;
+        case 'M':
+            moveCards(columns, stack, foundations);
+            moveCounter++; // Increment move counter
+            checkEndGame(foundations, commandChar, moveCounter);
+            break;
+        case 'S':
+            showGameState(columns, stack, foundations);
+            break;
+        case 'Z':
+            if (!checkEndGame(foundations, commandChar, moveCounter)) {
+                cout << "No has guanyat i has fet " << moveCounter;
+                if (moveCounter == 1) {
+                    cout << " moviment." << endl;
                 }
-                break;
+                else {
+                    cout << " moviments." << endl;
+                }
+            }
+            break;
         }
-        checkEndGame(storage, commandChar, moveCounter);
     }
-
 }

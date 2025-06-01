@@ -8,8 +8,11 @@
 
 using namespace std;
 
+// Function declarations for game commands
 void discardCard(vector<Card> &stack);
-void moveCards(vector<vector<Card>>& columns, vector<Card>& stack, Storage (&storage)[4]);
-void showGameState(const vector<vector<Card>> &columns, const vector<Card> &stack, const Storage storage[4]);
+
+void moveCards(vector<vector<Card>>& columns, vector<Card>& stack, Foundation (&foundations)[NUM_FOUNDATIONS]);
+
+void showGameState(const vector<vector<Card>>& columns, const vector<Card>& stack, const Foundation foundations[NUM_FOUNDATIONS]);
 
 #endif // COMMANDS_H

@@ -1,324 +1,419 @@
 #include <iostream>
 #include <vector>
-#include <string>
-
+#include <string> // for string handling
 using namespace std;
 
-//---------------------------------------------------------------------------------------------
-// STRUCTS
+enum Suit {
+    CLUBS = 0,
+    SPADES = 1,
+    HEARTS = 2,
+    DIAMONDS = 3
+    };
+
+const int NUM_COLUMNS = 7;
+const int NUM_FOUNDATIONS = 4;
+
+const int ACE_VALUE = 1;
+const int JACK_VALUE = 11;
+const int QUEEN_VALUE = 12;
+const int KING_VALUE = 13;
+
 struct Card {
-    int value;  // 1-13 (Ace-King)
-    int suit;   // 0-3 ( ♥, ♦, ♠, ♣)s
-};
+    int value;
+    Suit suit;
+    };
 
-struct Storage {
+struct Foundation {
     int lastCardID = 0;
-    int suit;
-};
-//---------------------------------------------------------------------------------------------
-// FUNCTIONS
-void readInit(vector<vector<Card>>& columns, vector<Card>& stack, Storage (&storage)[4]) {
-    // Initialize the game state and read the initial configuration from input
-    // This function should set up the game board, including the stack and columns
+    Suit suit = CLUBS;
+    };
 
+// PRE: suit és un valor vàlid de l'enumeració Suit.
+// POST: retorna true si suit correspon a HEARTS o DIAMONDS, false en cas contrari. 
+bool isRed(Suit& suit) {
+    return suit == HEARTS || suit == DIAMONDS;
+    }
 
-    for (int i = 0; i < 7; ++i) {   // Initialize 7 columns
-        int n;
-        cin >> n;
-        for (int j = 0; j < n; ++j) {
-            string input;
-            cin >> input;
-            columns[i].push_back(readCard(input));
+// PRE: card és una carta vàlida.
+// POST: retorna una representació en string de la carta, amb símbol i color.
+string printableCard(const Card& card) {
+
+    string output;
+    switch (card.value) {
+        case ACE_VALUE:   output = 'A'; break;
+        case JACK_VALUE:  output = 'J'; break;
+        case QUEEN_VALUE: output = 'Q'; break;
+        case KING_VALUE:  output = 'K'; break;
+        case 10:          output = "10"; break;
+        default:          output = card.value + '0'; break;
         }
-    }
-
-    for (int i = 0; i < 4; ++i) {   // Initialize 4 storage
-        int n;
-        cin >> n;
-        storage[i].lastCardID = n; // Initialize the top card ID for each foundation
-        storage[i].suit = i;
-        for (int j = 0; j < n; ++j) { // We dont have to process each card,  as the initial foundations are always in order.
-            string dummy;
-            cin >> dummy; // Read and discard the actual card string
+    switch (card.suit) {
+        case HEARTS: output = output + string("\033[0;31m\u2665\033[0m"); break;
+        case DIAMONDS: output = output + string("\033[0;31m\u2666\033[0m"); break;
+        case SPADES: output = output + string("\u2660"); break;
+        case CLUBS: output = output + string("\u2663"); break;
+        default: output = output; break;
         }
+    return output;
     }
 
-    int n;
-	cin >> n; // Read the number of cards in the stack
-    for (int i = 0; i < n; i++)    { // Initialize the stack with the remaining cards
-        string input;
-        cin >> input;
-        stack.insert(stack.begin(), readCard(input));
-    }
-
-    /*for (int i = 0; i < stack.size(); i++) {
-		cout << printCard(stack[i]) << " ";
-    }
-    cout << endl;*/
-}
-    
+// PRE: input és una string representant una carta vàlida, com "AS" o "10C".
+// POST: retorna un Card amb el valor i pal corresponent.
 Card readCard(string input) {
     int value;
-    char suitChar = input.back();   // Parses last character for suit
-    
-    // Turns any possible character into its corresponding number
-    if (input[0] == 'A') value = 1;
-    else if (input[0] == 'J') value = 11;
-    else if (input[0] == 'Q') value = 12;
-    else if (input[0] == 'K') value = 13;
-    else if (input[0] == '1' && input.size() > 1 && input[1] == '0') value = 10; // Handle 10. As value = 1 its input = A, the only number possible is 10.
-    else value = input[0] - '0'; // Convert char to int (1-9)
+    char suitChar = input.back();
 
-    int suit = 4;
+    if (input[0] == '1' && input.size() > 2 && input[1] == '0') {
+        value = 10;
+        }
+    else {
+        switch (input[0]) {
+            case 'A': value = ACE_VALUE; break;
+            case 'J': value = JACK_VALUE; break;
+            case 'Q': value = QUEEN_VALUE; break;
+            case 'K': value = KING_VALUE; break;
+            default:  value = input[0] - '0'; break;
+            }
+        }
+
+    Suit suit;
     switch (suitChar) {
-        case 'C': suit = 0; break;
-        case 'D': suit = 1; break;
-        case 'P': suit = 2; break;
-        case 'T': suit = 3; break;
-		default:
-			suit = 4;
-    }
+        case 'C': suit = HEARTS; break;
+        case 'D': suit = DIAMONDS; break;
+        case 'P': suit = SPADES; break;
+        case 'T': suit = CLUBS; break;
+        default: suit = HEARTS;
+        }
     Card card;
     card.value = value;
     card.suit = suit;
     return card;
-}
+    }
 
-bool moveCardsAux_toM(Card temp, Storage (&storage)[4], int num, int destinationNum)    {
+// PRE: columns(columnes) és buit, stack(pila) és buit, foundations(magatzems) està inicialitzat amb els pals corresponents (0-3).
+// POST: columns(columnes), stack(pila) i foundations(magatzems) queden plens amb les cartes inicials llegides de l’entrada.
+void readInit(vector<vector<Card>>& columns, vector<Card>& stack, Foundation(&foundations)[NUM_FOUNDATIONS]) {
+    for (int i = 0; i < NUM_COLUMNS; ++i) {
+        // Inv: S’han inicialitzat les primeres i columnes amb les cartes llegides de l’entrada.
+        int numCards;
+        cin >> numCards;
+        for (int j = 0; j < numCards; ++j) {
+            // Inv: La columna i conté les j cartes llegides, en ordre d’entrada.
+            string input;
+            cin >> input;
+            columns[i].push_back(readCard(input));
+            }
+        }
+
+    for (int i = 0; i < NUM_FOUNDATIONS; ++i) {
+        // Inv: S'han inicialitzat i magatzems amb el nombre de cartes corresponents.
+        int numCards;
+        cin >> numCards;
+        foundations[i].lastCardID = numCards;
+        string dummy;
+        if (numCards > 0) {
+            string input;
+            cin >> input;
+            foundations[i].suit = readCard(input).suit;
+            for (int j = 0; j < numCards - 1; ++j) {
+                // Inv: S'han llegit i descartat j cartes per al magatzem i.
+                cin >> dummy;
+                }
+            }
+        else {
+            for (int j = 0; j < numCards; ++j) {
+                // Inv: S'han llegit i descartat j cartes per al magatzem i.
+                cin >> dummy;
+                }
+            }
+        }
+
+    int numCards;
+    cin >> numCards; // Read the number of cards in the stack
+
+    string input;
+    for (int i = 0; i < numCards; i++) {
+        // Inv: stack conté les i primeres cartes llegides en ordre.
+        cin >> input;
+        stack.push_back(readCard(input));
+        }
+    reverse(stack.begin(), stack.end());
+    }
+
+// PRE: card és una carta vàlida, num és 1, destinationNum ∈ [1,4].
+// POST: retorna true si la carta es pot moure al magatzem corresponent; en aquest cas actualitza foundations(magatzems). Retorna false si no es pot.
+bool moveCardsAux_toM(vector<Card>& originVector, Foundation(&foundations)[NUM_FOUNDATIONS], int num, int destinationNum) {
     if (num != 1) {
         cout << "Error: Nombre de cartes a moure incorrecte" << endl;
         return false;
-    }
-    else if (storage[destinationNum - 1].lastCardID == 0 && temp.value != 1) {
-        cout << "Error: A un magatzem buit sols es pot moure un as" << endl;
-        return false;
-    }
-    else if (storage[destinationNum - 1].suit != temp.suit || temp.value != storage[destinationNum - 1].lastCardID + 1) {
+        }
+    else if (foundations[destinationNum - 1].lastCardID == 0) {
+        if (originVector.back().value != 1) {
+            cout << "Error: A un magatzem buit sols es pot moure un as" << endl;
+            return false;
+            }
+        else
+            {
+            foundations[destinationNum - 1].suit = originVector.back().suit;
+            foundations[destinationNum - 1].lastCardID++;
+            originVector.pop_back();
+            return true;
+            }
+        }
+    else if (foundations[destinationNum - 1].suit != originVector.back().suit || originVector.back().value != foundations[destinationNum - 1].lastCardID + 1) {
         cout << "Error: No hi ha concordança de valor i/o pal" << endl;
         return false;
-    }
+        }
     else {
-        storage[destinationNum - 1].lastCardID++;
-        //cout << "Card moved successfully to storage " << destinationNum << endl; // Debug message
+        foundations[destinationNum - 1].lastCardID++;
+        originVector.pop_back();
         return true;
-    }
-}
-bool moveCardsAux_toC(Card temp, vector<vector<Card>>& columns, int num, int destinationNum)    {
-    if (columns[destinationNum - 1].empty())    {
-        if (temp.value == 13)   {
-            columns[destinationNum - 1].push_back(temp);
-            //cout << "Card moved successfully to column " << destinationNum << endl; // Debug message
         }
-        else
-        {
-            cout << "Error: No hi ha concordança de valor i/o pal" << endl;
-            //cout << "You can only put a king in an empty column" << endl; // Debug message
+    }
+
+
+// PRE: card és una carta vàlida, num és 1, destinationNum ∈ [1,7].
+// POST: retorna true si la carta es pot moure a la columna corresponent; en aquest cas afegeix la carta a la columna. Retorna false si no es pot.
+bool moveCardsAux_toC(vector<Card>& originVector, vector<vector<Card>>& columns, int num, int originNum, int destinationNum) {
+    if (num == 1) {
+        if (columns[destinationNum - 1].empty()) {
+            if (originVector.back().value == KING_VALUE) {
+                columns[destinationNum - 1].push_back(originVector.back());
+                originVector.pop_back();
+                return true;
+                }
+            else
+                {
+                cout << "Error: A una columna buida sols es pot moure un rei" << endl;
+                return false;
+                }
+
+            }
+        else if (originVector.back().value != columns[destinationNum - 1].back().value - 1 || isRed(originVector.back().suit) == isRed(columns[destinationNum - 1].back().suit))
+            {
+            cout << "Error: No hi ha concordanc¸a de valor i/o pal" << endl;
             return false;
-        }
-    }
-    else
-    {
-        Card topCard = columns[destinationNum - 1].back();
-        if (topCard.suit % 2  != temp.suit % 2 && topCard.value - temp.value == 1)  {
-            columns[destinationNum - 1].push_back(temp);
-            //cout << "Card moved successfully to column " << destinationNum << endl; // Debug message
+            }
+        else
+            {
+            columns[destinationNum - 1].push_back(originVector.back());
+            originVector.pop_back();
             return true;
+            }
         }
-        else
+    else
         {
+        vector<Card> cardsToMove;
+        int startIdx = originVector.size() - num;
+        for (int i = startIdx; i < originVector.size(); i++) {
+            cardsToMove.push_back(originVector[i]);
+            }
+
+        for (int i = 0; i < cardsToMove.size(); i++) {
+            if (i > 0) {
+                if (cardsToMove[i].value != cardsToMove[i - 1].value - 1 || isRed(cardsToMove[i].suit) == isRed(cardsToMove[i - 1].suit)) {
+                    cout << "Error: El pilo indicat no es pot moure" << endl;
+                    return false;
+                    }
+                }
+            }
+
+
+        if (columns[destinationNum - 1].empty() && cardsToMove[0].value != KING_VALUE) {
+            cout << "Error: A una columna buida sols es pot moure un rei" << endl;
+            return false;
+            }
+        else if (cardsToMove[0].value != columns[destinationNum - 1].back().value - 1 || isRed(cardsToMove[0].suit) == isRed(columns[destinationNum - 1].back().suit))
+            {
             cout << "Error: No hi ha concordança de valor i/o pal" << endl;
             return false;
+            }
+        else
+            {
+            for (int i = 0; i < cardsToMove.size(); i++) {
+                columns[destinationNum - 1].push_back(cardsToMove[i]);
+                }
+            for (int i = 0; i < num; i++) {
+                columns[originNum - 1].pop_back();
+                }
+            return true;
+            }
         }
     }
-    
-}
 
-string printCard(const Card& card) {
-     // Print the card in a readable format
-    char outputValue = ' ';
-    if (card.value == 1) outputValue = 'A';
-    else if (card.value == 11) outputValue = 'J';
-    else if (card.value == 12) outputValue = 'Q';
-    else if (card.value == 13) outputValue = 'K';
-    else outputValue = card.value + '0'; // Convert int to char
-    string output;
-
-    switch (card.suit) {
-        case 0: output = outputValue + string("\033[0;31m\u2665\033[0m"); break; // Hearts
-        case 1: output = outputValue + string("\033[0;31m\u2666\033[0m"); break; // Diamonds
-        case 2: output = outputValue + string("\u2660"); break; // Spades
-        case 3: output = outputValue + string("\u2663"); break; // Clubs
-        default: output = outputValue; break;
-    }
-    return output;
-}
-bool checkEndGame(Storage(&storage)[4], char& commandChar, int& moveCounter) {
-    if (storage[0].lastCardID == 13 && storage[1].lastCardID == 13 && storage[2].lastCardID == 13 && storage[3].lastCardID == 13) {
-        cout << "Felicitats has guanyat!! Ho has fet en " <<  moveCounter;
-        if (moveCounter == 1) {
-            cout << " moviment." << endl;
-        }
-        else {
-            cout << " moviments." << endl;
-        }
-        commandChar = 'Z'; // Set commandChar to 'Z' to exit the game loop
-        return true;
-    }
+// PRE: foundations(magatzems) conté els valors finals dels magatzems, commandChar conté l’última acció, moveCounter ≥ 0.
+// POST: si tots els magatzems tenen 13 cartes, mostra el missatge de victòria, posa commandChar a 'Z' i retorna true; si no, retorna false.
+bool checkEndGame(Foundation(&foundations)[NUM_FOUNDATIONS], char& commandChar, int& moveCounter) {
+    if (foundations[0].lastCardID == KING_VALUE && foundations[1].lastCardID == KING_VALUE && foundations[2].lastCardID == KING_VALUE && foundations[3].lastCardID == KING_VALUE)   return true;
     return false;
-}
-//---------------------------------------------------------------------------------------------
-// COMMANDS
-void discardCard(vector<Card> &stack) {
-    // Discard the top card from the stack
-    Card discardedCard = stack.back();
-    stack.pop_back();
-    stack.emplace(stack.begin(), discardedCard); // Move the discarded card to the back of the stack
-
-    cout << "discardCard" << endl;
-}
-
-void moveCards(vector<vector<Card>>& columns, vector<Card>& stack, Storage (&storage)[4]) {
-    string origin, destination;
-	int num;
-
-	cin >> origin >> num >> destination;
-	int destIdx = destination.back() - '0';
-	int origIdx = origin.back() - '0';
-	if (destination == "P") {
-		cout << "Error: No es poden moure cartes a la pila" << endl;
-	}
-    else if (origin == "P") {
-		if (destination.front() == 'M') {
-			// Move from stack to foundation
-			if (moveCardsAux_toM(stack.back(), storage, num, destIdx))	stack.pop_back();
-		}
-		else if (destination.front() == 'C') {
-			// Move from stack to column
-			if (moveCardsAux_toC(stack.back(), columns, num, destIdx))	stack.pop_back();
-		}
     }
-	else if (origin.front() == 'C') {
-		if (destination.front() == 'M') {
-			// Move from column to foundation
-			if (moveCardsAux_toM(columns[origIdx - 1].back(), storage, num, destIdx))	columns[origIdx - 1].pop_back();
-			
-		}
-		else if (destination.front() == 'C') {
-			// Move from column to column
-			if (moveCardsAux_toC(columns[origIdx - 1].back(), columns, num, destIdx))	columns[origIdx - 1].pop_back();
-		}
-	}
-	else if (origin.front() == 'M') {
-		if (destination.front() == 'C') {
-			// Move from foundation to column
-			Card temp;
-			temp.value = storage[origIdx - 1].lastCardID;
-			temp.suit = storage[origIdx - 1].suit;
-			if (moveCardsAux_toC(temp, columns, num, destIdx))	storage[origIdx - 1].lastCardID--;
-		}
-	}
 
-    
-    cout << "moveCards" << endl;
-}
+// PRE: stack(pila) no és buit.
+// POST: mou la primera carta del vector stack(pila) al final del mateix.
+void discardCard(vector<Card>& stack) {
+    if (!stack.empty()) {
+        Card discardedCard = stack.back();
+        stack.pop_back();
+        stack.insert(stack.begin(), discardedCard);
+        cout << printableCard(stack.back()) << endl;
+        }
+    }
 
+// PRE: es llegeix de l’entrada una ordre de moviment vàlida amb origen, num i destí.
+// POST: si el moviment és vàlid segons les regles del joc, mou la carta i actualitza l'estructura corresponent.
+void moveCards(vector<vector<Card>>& columns, vector<Card>& stack, Foundation(&foundations)[NUM_FOUNDATIONS]) {
+    string origin, destination;
+    int num;
 
-void showGameState(const vector<vector<Card>> &columns, const vector<Card> &stack, const Storage storage[4]) {
-	// Show the game state
-	cout << "Pila:";
-	if (stack.empty())	{
-		cout << " -" << endl;
-	}
-	else
-	{
-		cout << " " << printCard(stack.back()) << endl;
-	}
-	
-	
-	for (int i = 0; i < 4; ++i) {
-		cout << "Mag " << i + 1 << ":";
-		if (storage[i].lastCardID == 0) {
-			cout << " -" << endl;
-		}
-		else
-		{
-			for (int j = 0; j < storage[i].lastCardID; ++j) {
-				Card temp;
-				temp.value = j + 1;
-				temp.suit = storage[i].suit;
-				cout << " " << printCard(temp);
-			}
-			cout << endl;
-		}
-		
-	}
-	
-	for (int i = 0; i < 7; ++i) {
-		cout << "Col " << i + 1 << ":";
-		if (columns[i].empty()) {
-			cout << " -" << endl;
-		}
-		else
-		{
-			for (int j = 0; j < columns[i].size(); ++j) {
-				cout << " " << printCard(columns[i][j]);
-			}
-			cout << endl;
-		}
-		
-	}
-	cout << "---" << endl;
-    cout << "showGameState" << endl;
-}
-//---------------------------------------------------------------------------------------------
+    cin >> origin >> num >> destination;
+    int destinationIndex = destination.back() - '0';
+    int originIndex = origin.back() - '0';
+    if (destination == "P") {
+        cout << "Error: No es poden moure cartes a la pila" << endl;
+        }
+    else if (origin == "P") {
+        if (destination.front() == 'M') {
+            moveCardsAux_toM(stack, foundations, num, destinationIndex);
+            }
+        else if (destination.front() == 'C') {
+            if (num != 1) {
+                cout << "Error: Nombre de cartes a moure incorrecte" << endl;
+                }
+            else (moveCardsAux_toC(stack, columns, num, originIndex, destinationIndex));
+            }
+        }
+    else if (origin.front() == 'C') {
+        if (destination.front() == 'M') {
+            moveCardsAux_toM(columns[originIndex - 1], foundations, num, destinationIndex);
+            }
+        else if (destination.front() == 'C') {
+            moveCardsAux_toC(columns[originIndex - 1], columns, num, originIndex, destinationIndex);
+            }
+        }
+    else if (origin.front() == 'M') {
+        if (destination.front() == 'C') {
+            Card card;
+            vector<Card> tempStack;
+            card.value = foundations[originIndex - 1].lastCardID;
+            card.suit = foundations[originIndex - 1].suit;
+            tempStack.push_back(card);
+            if (num != 1) {
+                cout << "Error: Nombre de cartes a moure incorrecte" << endl;
+                }
+            else if (moveCardsAux_toC(tempStack, columns, num, originIndex, destinationIndex))	foundations[originIndex - 1].lastCardID--;
+            }
+        }
+    }
+
+// PRE: columns(columnes) conté les 7 columnes, stack(pila) i foundations(magatzems) reflecteixen l’estat actual del joc.
+// POST: mostra per pantalla l’estat actual del joc: pila, magatzems i columnes.
+void showGameState(const vector<vector<Card>>& columns, const vector<Card>& stack, const Foundation foundations[NUM_FOUNDATIONS]) {
+    cout << "Pila:";
+    if (stack.empty()) {
+        cout << " -" << endl;
+        }
+    else
+        {
+        cout << " " << printableCard(stack.back()) << endl;
+        }
+
+    for (int i = 0; i < NUM_FOUNDATIONS; ++i) {
+        cout << "Mag " << i + 1 << ":";
+        if (foundations[i].lastCardID == 0) {
+            cout << " -" << endl;
+            }
+        else
+            {
+            for (int j = 0; j < foundations[i].lastCardID; ++j) {
+                // Inv: S’han mostrat les j primeres cartes del magatzem i.
+                Card card;
+                card.value = j + 1;
+                card.suit = foundations[i].suit;
+                cout << " " << printableCard(card);
+                }
+            cout << endl;
+            }
+        }
+
+    for (int i = 0; i < NUM_COLUMNS; ++i) {
+        cout << "Col " << i + 1 << ":";
+        if (columns[i].empty()) {
+            cout << " -" << endl;
+            }
+        else
+            {
+            for (int j = 0; j < columns[i].size(); ++j) {
+                // Inv: S’han mostrat les j primeres cartes de la columna i.
+                cout << " " << printableCard(columns[i][j]);
+                }
+            cout << endl;
+            }
+        }
+    cout << "---" << endl;
+    }
 int main() {
-    // Define data structures
-    vector<Card> stack; // stack of cards
-    vector<vector<Card>> columns(7);    // 7 columns for the game
+    vector<Card> stack;
+    vector<vector<Card>> columns(NUM_COLUMNS);
+    Foundation foundations[NUM_FOUNDATIONS];
 
-    Storage storage[4]; // 4 suits for each foundation
-    storage[0].suit = 0; // ♥
-    storage[1].suit = 1; // ♦
-    storage[2].suit = 2; // ♠
-    storage[3].suit = 3; // ♣
+    readInit(columns, stack, foundations);
 
-    // Reading cards from input
-    readInit(columns, stack, storage);
-
-    // Clear any leftover input in the buffer
     cin.clear();
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
-    char commandChar = ' '; // Initialize command character
-    int moveCounter = 0; // Initialize move counter
-    while (commandChar != 'Z')  {
-        cin >> commandChar; // Read command character
+    char commandChar = ' ';
+    int moveCounter = 0;
+    while (commandChar != 'Z') {
+        // Inv: L'estat del joc reflecteix correctament totes les comandes llegides fins ara,
+        // i moveCounter conté el nombre de moviments realitzats.
+        cin >> commandChar;
 
         switch (commandChar) {
             case 'D':
-                discardCard(stack);
-                moveCounter++; // Increment move counter
-                break;
-            case 'M':
-                moveCards(columns, stack, storage);
-                moveCounter++; // Increment move counter
-                break;
-            case 'S':
-                showGameState(columns, stack, storage);
-                break;
-            case 'Z':
-                if (!checkEndGame(storage, commandChar, moveCounter))   {
-                    cout << "No has guanyat i has fet " << moveCounter;
-                    if (moveCounter == 1) {
-                        cout << " moviment." << endl;
+            discardCard(stack);
+            moveCounter++;
+            if (checkEndGame(foundations, commandChar, moveCounter))
+                {
+                showGameState(columns, stack, foundations);
+                cout << "Felicitats has guanyat!! Ho has fet en " << moveCounter;
+                if (moveCounter == 1) {
+                    cout << " moviment." << endl;
                     }
-                    else {
-                        cout << " moviments." << endl;
+                else {
+                    cout << " moviments." << endl;
+                    }
+                commandChar = 'Z';
+                }
+            break;
+            case 'M':
+            moveCards(columns, stack, foundations);
+            moveCounter++;
+            if (checkEndGame(foundations, commandChar, moveCounter)) {
+                showGameState(columns, stack, foundations);
+                cout << "Felicitats has guanyat!! Ho has fet en " << moveCounter;
+                if (moveCounter == 1) {
+                    cout << " moviment." << endl;
+                    }
+                else {
+                    cout << " moviments." << endl;
+                    }
+                commandChar = 'Z';
+                }
+            break;
+            case 'S':
+            showGameState(columns, stack, foundations);
+            break;
+            case 'Z':
+            if (!checkEndGame(foundations, commandChar, moveCounter)) {
+                cout << "No has guanyat i has fet " << moveCounter;
+                if (moveCounter == 1) {
+                    cout << " moviment." << endl;
+                    }
+                else {
+                    cout << " moviments." << endl;
                     }
                 }
-                break;
+            break;
+            }
         }
-        checkEndGame(storage, commandChar, moveCounter);
     }
-
-}
