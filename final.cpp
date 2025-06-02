@@ -28,6 +28,7 @@ struct Foundation {
     Suit suit = CLUBS;
     };
 
+//---------------------------------------------------------------------------------------------
 // PRE: suit és un valor vàlid de l'enumeració Suit.
 // POST: retorna true si suit correspon a HEARTS o DIAMONDS, false en cas contrari. 
 bool isRed(Suit& suit) {
@@ -372,8 +373,7 @@ int main() {
             case 'D':
             discardCard(stack);
             moveCounter++;
-            if (checkEndGame(foundations, commandChar, moveCounter))
-                {
+            if (checkEndGame(foundations, commandChar, moveCounter)) {
                 showGameState(columns, stack, foundations);
                 cout << "Felicitats has guanyat!! Ho has fet en " << moveCounter;
                 if (moveCounter == 1) {
